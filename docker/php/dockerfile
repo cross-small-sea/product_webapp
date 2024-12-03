@@ -1,0 +1,48 @@
+# docker/php/Dockerfile
+FROM php:8.3.8-apache
+
+# 必要なパッケージのインストール
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    libzip-dev \
+    libicu-dev \
+    && docker-php-ext-install zip pdo pdo_mysql intl \
+    && docker-php-ext-enable opcache
+
+# Apacheの設定
+RUN a2enmod rewrite headers
+RUN echo '\
+<Directory /var/www/html/public>\n\
+    Header set Access-Control-Allow-Origin "*"\n\
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"\n\
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization"\n\
+</Directory>\n\
+' >> /etc/apache2/conf-available/cors.conf
+
+RUN a2enconf cors
+
+# Composerのインストール
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# PHP設定の最適化
+RUN echo '\
+opcache.enable=1\n\
+opcache.enable_cli=1\n\
+opcache.memory_consumption=128\n\
+opcache.interned_strings_buffer=8\n\
+opcache.max_accelerated_files=4000\n\
+opcache.revalidate_freq=60\n\
+opcache.fast_shutdown=1\n\
+' >> /usr/local/etc/php/conf.d/opcache.ini
+
+# PHP.iniの設定
+RUN echo '\
+memory_limit = 256M\n\
+upload_max_filesize = 64M\n\
+post_max_size = 64M\n\
+max_execution_time = 60\n\
+date.timezone = Asia/Tokyo\n\
+' > /usr/local/etc/php/conf.d/custom.ini
+
+WORKDIR /var/www/html

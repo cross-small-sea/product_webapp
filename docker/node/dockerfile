@@ -1,0 +1,19 @@
+# docker/node/Dockerfile
+FROM node:latest
+
+WORKDIR /app
+
+# パッケージインストールを最適化するための設定
+COPY frontend/package*.json ./
+
+# パッケージのインストール
+RUN npm install
+
+# ソースコードのコピー（docker-composeでボリュームマウントするため本番環境用）
+# COPY frontend/ .
+
+# 開発サーバーのポート
+EXPOSE 3000
+
+# 開発サーバーの起動
+CMD ["npm", "run", "dev"]
